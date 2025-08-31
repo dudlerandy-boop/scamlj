@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuckyJet Predictor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f051d 0%, #2a1050 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Анимированный фон с частицами */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(180, 100, 255, 0.3);
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 550px;
+            text-align: center;
+            z-index: 10;
+            animation: fadeIn 1s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header {
+            margin-bottom: 40px;
+            position: relative;
+            animation: slideDown 0.8s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .title {
+            font-size: 52px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #b967ff, #6a36c9, #ff00ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(185, 103, 255, 0.7);
+            position: relative;
+            z-index: 2;
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 10px rgba(185, 103, 255, 0.7); }
+            to { text-shadow: 0 0 25px rgba(185, 103, 255, 0.9), 0 0 35px rgba(255, 0, 255, 0.6); }
+        }
+        
+        .subtitle {
+            font-size: 26px;
+            color: #d9b3ff;
+            margin-bottom: 30px;
+            text-shadow: 0 0 15px rgba(185, 103, 255, 0.6);
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+        
+        .timer-container {
+            background: rgba(44, 14, 78, 0.6);
+            border-radius: 25px;
+            padding: 30px;
+            margin: 25px 0;
+            border: 2px solid #8a4dff;
+            box-shadow: 0 0 40px rgba(138, 77, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            animation: scaleIn 0.8s ease-out;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .timer-container::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            background: linear-gradient(45deg, #6a36c9, #b967ff, #6a36c9);
+            z-index: -1;
+            border-radius: 30px;
+            opacity: 0.4;
+            filter: blur(25px);
+            animation: rotateBg 20s linear infinite;
+        }
+        
+        @keyframes rotateBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .timer {
+            font-size: 82px;
+            font-weight: bold;
+            color: #e6ccff;
+            text-shadow: 0 0 20px rgba(185, 103, 255, 0.9);
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .status {
+            font-size: 20px;
+            color: #d9b3ff;
+            margin-bottom: 15px;
+            transition: all 0.5s ease;
+        }
+        
+        .next-signal {
+            font-size: 20px;
+            color: #b967ff;
+            margin-bottom: 25px;
+            text-shadow: 0 0 8px rgba(185, 103, 255, 0.6);
+            transition: all 0.5s ease;
+        }
+        
+        .signals-list {
+            background: rgba(44, 14, 78, 0.5);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 30px;
+            max-height: 350px;
+            overflow-y: auto;
+            border: 1px solid #6a36c9;
+            box-shadow: 0 0 25px rgba(106, 54, 201, 0.4);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 1s ease-out 0.5s both;
+        }
+        
+        .signals-list::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .signals-list::-webkit-scrollbar-track {
+            background: rgba(44, 14, 78, 0.3);
+            border-radius: 5px;
+        }
+        
+        .signals-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #8a4dff, #6a36c9);
+            border-radius: 5px;
+        }
+        
+        .signal-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #5a2fa3;
+            display: flex;
+            justify-content: space-between;
+            transition: all 0.4s ease;
+            border-radius: 8px;
+            margin: 5px 0;
+        }
+        
+        .signal-item:hover {
+            background: rgba(138, 77, 255, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .signal-item:last-child {
+            border-bottom: none;
+        }
+        
+        .signal-time {
+            color: #d9b3ff;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(185, 103, 255, 0.5);
+        }
+        
+        .active {
+            background: rgba(138, 77, 255, 0.3);
+            border-radius: 10px;
+            transform: scale(1.03);
+            box-shadow: 0 0 15px rgba(185, 103, 255, 0.4);
+            animation: pulseActive 2s infinite;
+        }
+        
+        @keyframes pulseActive {
+            0% { box-shadow: 0 0 10px rgba(185, 103, 255, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(185, 103, 255, 0.7); }
+            100% { box-shadow: 0 0 10px rgba(185, 103, 255, 0.4); }
+        }
+        
+        .current-time {
+            margin-top: 25px;
+            color: #b967ff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            animation: fadeIn 1s ease-out 0.7s both;
+        }
+        
+        .info {
+            margin-top: 25px;
+            color: #a87bd3;
+            font-size: 16px;
+            line-height: 1.5;
+            animation: fadeIn 1s ease-out 0.9s both;
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 25px rgba(138, 77, 255, 0.5);
+            }
+            100% {
+                transform: scale(1.03);
+                box-shadow: 0 0 40px rgba(185, 103, 255, 0.8);
+            }
+        }
+        
+        .countdown-active {
+            animation: countdownPulse 0.5s infinite alternate;
+            color: #ff9df9 !important;
+        }
+        
+        @keyframes countdownPulse {
+            0% { text-shadow: 0 0 10px rgba(255, 157, 249, 0.8); }
+            100% { text-shadow: 0 0 25px rgba(255, 157, 249, 1), 0 0 35px rgba(255, 0, 255, 0.7); }
+        }
+        
+        /* Стили для формы входа */
+        .login-container {
+            background: rgba(44, 14, 78, 0.8);
+            border-radius: 25px;
+            padding: 40px;
+            border: 2px solid #8a4dff;
+            box-shadow: 0 0 40px rgba(138, 77, 255, 0.5);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            z-index: 20;
+            animation: scaleIn 0.8s ease-out;
+        }
+        
+        .login-title {
+            font-size: 32px;
+            margin-bottom: 30px;
+            color: #e6ccff;
+            text-shadow: 0 0 15px rgba(185, 103, 255, 0.7);
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 18px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .login-input:focus {
+            outline: none;
+            border-color: #8a4dff;
+            box-shadow: 0 0 15px rgba(138, 77, 255, 0.5);
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(45deg, #8a4dff, #6a36c9);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .login-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(138, 77, 255, 0.7);
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            margin-top: 15px;
+            font-size: 16px;
+            display: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .title {
+                font-size: 36px;
+            }
+            
+            .subtitle {
+                font-size: 20px;
+            }
+            
+            .timer {
+                font-size: 60px;
+            }
+            
+            .timer-container {
+                padding: 20px;
+            }
+            
+            .signals-list {
+                padding: 15px;
+            }
+            
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            .login-title {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <!-- Контейнер для входа -->
+    <div class="login-container" id="loginContainer">
+        <h2 class="login-title">ДОСТУП К LUCKYJET</h2>
+        <input type="password" class="login-input" id="accessKey" placeholder="Введите ключ доступа" autocomplete="off">
+        <button class="login-button" id="loginButton">ВОЙТИ</button>
+        <div class="error-message" id="errorMessage">Неверный ключ доступа. Попробуйте снова.</div>
+    </div>
+    
+    <!-- Основной контент (изначально скрыт) -->
+    <div class="container hidden" id="mainContent">
+        <div class="header">
+            <h1 class="title">LUCKYJET</h1>
+            <div class="subtitle">ПРОГНОЗ СИГНАЛОВ</div>
+        </div>
+        
+        <div class="timer-container" id="timerContainer">
+            <div class="status" id="status">Ожидание следующего сигнала</div>
+            <div class="timer" id="timer">--:--</div>
+            <div class="next-signal">Следующий сигнал: <span id="nextSignalTime">--:--</span></div>
+        </div>
+        
+        <div class="current-time">
+            <i class="fas fa-clock"></i>
+            <span>Текущее время (МСК): <span id="currentTime">--:--</span></span>
+        </div>
+        
+        <div class="info">
+            Таймер показывает обратный отсчет за 30 секунд до каждого сигнала
+        </div>
+    </div>
+
+    <script>
+        // Правильный ключ доступа (можно изменить на любой другой)
+        const CORRECT_ACCESS_KEY = "LUCKY2025";
+        
+        // Элементы DOM
+        const loginContainer = document.getElementById('loginContainer');
+        const mainContent = document.getElementById('mainContent');
+        const accessKeyInput = document.getElementById('accessKey');
+        const loginButton = document.getElementById('loginButton');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // Проверка, был ли пользователь уже авторизован
+        window.addEventListener('DOMContentLoaded', () => {
+            const isAuthorized = localStorage.getItem('luckyjetAuthorized');
+            if (isAuthorized === 'true') {
+                showMainContent();
+            } else {
+                showLoginForm();
+            }
+            
+            // Создаем частицы
+            createParticles();
+        });
+        
+        // Обработчик клика по кнопке входа
+        loginButton.addEventListener('click', checkAccessKey);
+        
+        // Обработчик нажатия Enter в поле ввода
+        accessKeyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAccessKey();
+            }
+        });
+        
+        // Функция проверки ключа доступа
+        function checkAccessKey() {
+            const enteredKey = accessKeyInput.value.trim();
+            
+            if (enteredKey === CORRECT_ACCESS_KEY) {
+                // Сохраняем статус авторизации
+                localStorage.setItem('luckyjetAuthorized', 'true');
+                showMainContent();
+            } else {
+                // Показываем ошибку
+                errorMessage.style.display = 'block';
+                accessKeyInput.style.borderColor = '#ff6b6b';
+                
+                // Анимация ошибки
+                accessKeyInput.animate([
+                    { transform: 'translateX(0)' },
+                    { transform: 'translateX(-5px)' },
+                    { transform: 'translateX(5px)' },
+                    { transform: 'translateX(-5px)' },
+                    { transform: 'translateX(0)' }
+                ], {
+                    duration: 600,
+                    iterations: 1
+                });
+            }
+        }
+        
+        // Показать основное содержимое
+        function showMainContent() {
+            loginContainer.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            
+            // Запускаем таймер
+            setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+        
+        // Показать форму входа
+        function showLoginForm() {
+            loginContainer.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+        }
+        
+        // Массив сигналов в формате "минута:секунда"
+        const signals = [
+            "4:50", "6:50", "7:50", "9:50", "10:50", "11:50", "13:50", "14:50", "16:50", 
+            "17:50", "18:50", "19:50", "20:50", "22:50", "23:50", "25:50", "26:50", "27:50",
+            "29:50", "33:50", "34:50", "36:50", "37:50", "38:50", "39:50", "40:50", "43:50",
+            "44:50", "45:50", "47:50", "48:50", "50:50", "52:50", "53:50", "54:50", "56:50", "57:50"
+        ];
+
+        // Создаем частицы для фона
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 45;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Случайные размеры и позиция
+                const size = Math.random() * 20 + 5;
+                const posX = Math.random() * 100;
+                const posY = Math.random() * 100;
+                const delay = Math.random() * 15;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${posX}vw`;
+                particle.style.top = `${posY}vh`;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        const timerElement = document.getElementById('timer');
+        const statusElement = document.getElementById('status');
+        const nextSignalElement = document.getElementById('nextSignalTime');
+        const currentTimeElement = document.getElementById('currentTime');
+        const timerContainer = document.getElementById('timerContainer');
+        
+        let lastSignalMinute = null;
+
+        // Функция для получения текущего московского времени (UTC+3)
+        function getMoscowTime() {
+            const now = new Date();
+            // Moscow time is UTC+3
+            const moscowOffset = 3 * 60; // 3 hours in minutes
+            const localOffset = now.getTimezoneOffset();
+            const moscowTime = new Date(now.getTime() + (moscowOffset + localOffset) * 60000);
+            return moscowTime;
+        }
+
+        // Функция для обновления таймера
+        function updateTimer() {
+            const now = getMoscowTime();
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentSeconds = now.getSeconds();
+            
+            // Обновляем отображение текущего времени
+            currentTimeElement.textContent = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}:${String(currentSeconds).padStart(2, '0')}`;
+            
+            const currentTotalSeconds = currentMinutes * 60 + currentSeconds;
+            
+            // Находим следующий сигнал
+            let nextSignal = null;
+            for (const signal of signals) {
+                const [minutes, seconds] = signal.split(':').map(Number);
+                const signalTotalSeconds = minutes * 60 + seconds;
+                
+                if (signalTotalSeconds > currentTotalSeconds) {
+                    nextSignal = signalTotalSeconds;
+                    break;
+                }
+            }
+            
+            // Если на этот час сигналы закончились, берем первый сигнал следующего часа
+            if (!nextSignal) {
+                const [firstMinutes, firstSeconds] = signals[0].split(':').map(Number);
+                nextSignal = firstMinutes * 60 + firstSeconds + 3600; // Добавляем 1 час (3600 секунд)
+            }
+            
+            // Вычисляем оставшееся время до сигнала
+            let timeRemaining = nextSignal - currentTotalSeconds;
+            
+            // Отображаем следующий сигнал в формате мм:сс
+            const nextSignalMinutes = Math.floor(nextSignal % 3600 / 60);
+            const nextSignalSeconds = nextSignal % 60;
+            const nextSignalFormatted = `${String(nextSignalMinutes).padStart(2, '0')}:${String(nextSignalSeconds).padStart(2, '0')}`;
+            nextSignalElement.textContent = nextSignalFormatted;
+            
+            // Если до сигнала 30 секунд или меньше, показываем обратный отсчет
+            if (timeRemaining <= 30 && timeRemaining >= 0) {
+                timerElement.textContent = `00:${String(timeRemaining).padStart(2, '0')}`;
+                statusElement.textContent = `До сигнала осталось:`;
+                statusElement.style.color = '#ff9df9';
+                
+                // Добавляем анимацию пульсации
+                timerContainer.classList.add('pulse');
+                timerElement.classList.add('countdown-active');
+                
+                // Подсвечиваем активный сигнал в списке
+                highlightActiveSignal(nextSignalMinutes, nextSignalSeconds);
+            } else {
+                timerElement.textContent = '--:--';
+                statusElement.textContent = 'Ожидание следующего сигнала';
+                statusElement.style.color = '#d9b3ff';
+                
+                // Убираем анимацию пульсации
+                timerContainer.classList.remove('pulse');
+                timerElement.classList.remove('countdown-active');
+                
+                // Сбрасываем подсветку
+                resetHighlight();
+            }
+        }
+
+        // Подсветка активного сигнала в списке
+        function highlightActiveSignal(minutes, seconds) {
+            // Сбрасываем предыдущую подсветку
+            resetHighlight();
+            
+            // Находим элемент сигнала для подсветки
+            const signalId = `signal-${minutes}-${seconds}`;
+            const signalElement = document.getElementById(signalId);
+            
+            if (signalElement) {
+                signalElement.classList.add('active');
+            }
+        }
+
+        // Сброс подсветки всех сигналов
+        function resetHighlight() {
+            const allSignals = document.querySelectorAll('.signal-item');
+            allSignals.forEach(signal => {
+                signal.classList.remove('active');
+            });
+        }
+    </script>
+</body>
+</html>
